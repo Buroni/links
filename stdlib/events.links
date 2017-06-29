@@ -62,3 +62,9 @@ fun onKeyPress(f) {
 fun onInput(f) {
     StringHandler("oninput", f)
 }
+
+### SUBSCRIPTIONS ###
+
+fun getKeyCode(f) {
+  StringHandler("keypress", f)
+}

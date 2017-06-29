@@ -4,7 +4,7 @@
 
 # typename VirtualHandler(a) = [| StringHandler: ((String) -> a) | Pines: a |];
 typename VirtualHandler(a) =
-  [| StringHandler: (String, (String) {}~> a) | UnitHandler: (String, () {}~> a) |];
+  [| StringHandler: (String, (String) {}~> a) | UnitHandler: (String, () {}~> a) | TupleIntHandler: (String, (Int,Int) {}~> a) | TimeHandler: (Int, () {}~> a) |];
 
 typename Doc(a) =
   [| DocTextNode: (String)
@@ -12,6 +12,8 @@ typename Doc(a) =
       (tagName: String, attrs: [(String, String)], eventHandlers: [VirtualHandler(a)],
        children: [Doc(a)])
    |];
+
+typename Sub(a) = (msg: a, handler: VirtualHandler(a));
 
 fun textDoc(str) {
   DocTextNode(str)
@@ -33,26 +35,26 @@ alien javascript module "virtual-dom.js" VirtualDOM {
 
 # Loads the "vdom.js" file, exposes runDom and updateDom.
 alien javascript module "vdom.js" VDom {
-  runDom : forall a . (String, Doc(a), Process({hear:a, wild})) ~%e~> ();
+  runDom : forall a . (String, Doc(a), Process({hear:a, wild}), [VirtualHandler(a)]) ~%e~> ();
   updateDom : forall a . (Doc(a)) ~%e~> ();
 }
 
 
 # Main event loop
-fun evtLoop(updt, render, model) {
+fun evtLoop(updt, render, model, subscriptions) {
   receive {
     case msg ->
       var newModel = updt(msg, model);
       VDom.updateDom(render(newModel));
-      evtLoop(updt, render, newModel)
+      evtLoop(updt, render, newModel, subscriptions)
   }
 }
 
 # User-facing function
-fun runVDom(placeholder, view, updt, model) {
+fun runVDom(placeholder, view, updt, model, subscriptions) {
   var evtHandler = spawnClient {
-    evtLoop(updt, view, model)
+    evtLoop(updt, view, model, subscriptions)
   };
-  var _ = spawnClient { VDom.runDom(placeholder, view(model), evtHandler) };
+  var _ = spawnClient { VDom.runDom(placeholder, view(model), evtHandler, subscriptions) };
   evtHandler
 }
