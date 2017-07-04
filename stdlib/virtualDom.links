@@ -57,20 +57,27 @@ fun attr(k, v) {
 }
 
 # Main event loop
-fun evtLoop(updt, render, model, subscriptions) {
+fun evtLoop(updt, render, model, prevSubscriptions, subscriptionsFn) {
   receive {
     case msg ->
       var newModel = updt(msg, model);
+      # Get new subscriptions
+      # var newSubscriptions = subscriptionsFn(newModel);
+      # var subscriptionsDiff = diffSubscriptions(prevSubscriptions, newSubscriptions);
+      # Update subscriptions on the DOM (FFI call)
+      # VDom.updateSubscriptions(subscriptionsDiff);
+      # Update DOM
       VDom.updateDom(render(newModel));
-      evtLoop(updt, render, newModel, subscriptions)
+      # Loop with new subscriptions
+      evtLoop(updt, render, newModel, prevSubscriptions, subscriptionsFn)
   }
 }
 
 # User-facing function
 fun runVDom(placeholder, view, updt, model, subscriptions) {
   var evtHandler = spawnClient {
-    evtLoop(updt, view, model, subscriptions)
+    evtLoop(updt, view, model, subscriptions(model), subscriptions)
   };
-  var _ = spawnClient { VDom.runDom(placeholder, view(model), evtHandler, subscriptions) };
+  var _ = spawnClient { VDom.runDom(placeholder, view(model), evtHandler, subscriptions(model)) };
   evtHandler
 }
