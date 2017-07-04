@@ -13,7 +13,35 @@ typename Doc(a) =
        children: [Doc(a)])
    |];
 
-typename Sub(a) = (msg: a, handler: VirtualHandler(a));
+# Needed to ensure that virtual-dom is open
+alien javascript module "virtual-dom.js" VirtualDOM {
+  dummy : ();
+}
+
+typename Sub(a) = [| EmptySub | HandlerSub : (Int, VirtualHandler(a)) | Sub : (a) |];
+
+# Loads the "vdom.js" file, exposes runDom and updateDom.
+alien javascript module "vdom.js" VDom {
+  runDom : forall a . (String, Doc(a), Process({hear:a, wild}), [Sub(a)]) ~%e~> ();
+  updateDom : forall a . (Doc(a)) ~%e~> ();
+  getUniqueID : () ~%e~> (Int);
+}
+
+### SUBSCRIPTIONS ### 
+
+fun uniqueID() {
+  VDom.getUniqueID()
+}
+
+fun getKeyCode(f) {
+  HandlerSub(uniqueID(), StringHandler("keypress", f))
+}
+
+fun getEvery(interval, f) {
+  HandlerSub(uniqueID(), TimeHandler(interval, f))
+}
+
+######
 
 fun textDoc(str) {
   DocTextNode(str)
@@ -27,18 +55,6 @@ fun tag(nameOfTag, attrsOfTag, handlers, childrenOfTag) {
 fun attr(k, v) {
   (k, v)
 }
-
-# Needed to ensure that virtual-dom is open
-alien javascript module "virtual-dom.js" VirtualDOM {
-  dummy : ();
-}
-
-# Loads the "vdom.js" file, exposes runDom and updateDom.
-alien javascript module "vdom.js" VDom {
-  runDom : forall a . (String, Doc(a), Process({hear:a, wild}), [VirtualHandler(a)]) ~%e~> ();
-  updateDom : forall a . (Doc(a)) ~%e~> ();
-}
-
 
 # Main event loop
 fun evtLoop(updt, render, model, subscriptions) {
