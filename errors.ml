@@ -60,7 +60,13 @@ let format_exception = function
 			    (mapstrcat "\n  " show_pos (List.rev positions)))
           duplicates ""
   | Sys.Break -> "Caught interrupt"
-  | exn -> "*** Error: " ^ Printexc.to_string exn
+  | exn -> (* "*** Error: " ^ Printexc.to_string exn *)
+      Printexc.print_backtrace stderr;
+      output_string stderr (Printexc.to_string exn);
+      flush stderr;
+      raise exn (* use for backtraces *)
+
+
 
 let format_exception_html = function
   | RichSyntaxError s ->

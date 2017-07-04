@@ -6,10 +6,6 @@ open VirtualDom
 typename Model = (seconds : Int, minutes : Int, paused: Bool);
 typename Msg = [| Tick | Reset | TogglePause | Stop | NoOp |];
 
-fun getEvery(interval, f) {
-  TimeHandler(interval, f)
-}
-
 fun resetHandler() {
   onClick(fun() { Reset })
 }
@@ -92,11 +88,20 @@ fun view(model) {
     ])
 }
 
+#sig subscriptions : Model -> [Sub(Msg)] 
+fun subscriptions(model) {
+    if (model.paused == true) {
+      [secondsHandler(), shortcutHandler("80",TogglePause), shortcutHandler("82",Reset), shortcutHandler("83",Stop)]
+    } else {
+      []
+    }
+}
+
 
 fun mainPage(_, _) {
   var initialModel = (seconds = 0, minutes = 0, paused = true);
-  var subscriptions = [secondsHandler(), shortcutHandler("80",TogglePause), shortcutHandler("82",Reset),shortcutHandler("83",Stop)];
-  var evtHandler = runVDom("placeholder", view, updt, initialModel, subscriptions);
+  var subs = subscriptions(initialModel);
+  var evtHandler = runVDom("placeholder", view, updt, initialModel, subs);
   page
   <html>
     <head>

@@ -1,2 +1,2 @@
-#!/usr/bin/env/bash
-sudo ../links --config=../config -m --path=.:../ time.links
+#!/usr/bin/env bash
+sudo ../links --config=../config -m -d --path=.:../ time.links

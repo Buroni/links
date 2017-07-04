@@ -1,0 +1,13 @@
+open VirtualDom
+
+alien javascript module "subscriptions.js" VirtualDOM {
+  uniqueID : () ~%e~> ();
+}
+
+fun getKeyCode(f) {
+  HandlerSub(StringHandler("keypress", f))
+}
+
+fun getEvery(interval, f) {
+  HandlerSub(TimeHandler(interval, f))
+}
