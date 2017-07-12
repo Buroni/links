@@ -90,11 +90,7 @@ fun view(model) {
 
 #sig subscriptions : Model -> [Sub(Msg)] 
 fun subscriptions(model) {
-    if (model.paused == true) {
-      [secondsHandler(), shortcutHandler("80",TogglePause), shortcutHandler("82",Reset), shortcutHandler("83",Stop)]
-    } else {
-      []
-    }
+  [secondsHandler(), shortcutHandler("80",TogglePause), shortcutHandler("82",Reset), shortcutHandler("83",Stop)]
 }
 
 
