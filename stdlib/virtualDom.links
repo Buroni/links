@@ -18,27 +18,32 @@ alien javascript module "virtual-dom.js" VirtualDOM {
   dummy : ();
 }
 
-typename Sub(a) = [| EmptySub | HandlerSub : (Int, VirtualHandler(a)) | Sub : (a) |];
+typename Sub(a) = [| EmptySub | HandlerSub : (String, VirtualHandler(a)) | Sub : (a) |];
+
 
 # Loads the "vdom.js" file, exposes runDom and updateDom.
 alien javascript module "vdom.js" VDom {
   runDom : forall a . (String, Doc(a), Process({hear:a, wild}), [Sub(a)]) ~%e~> ();
   updateDom : forall a . (Doc(a)) ~%e~> ();
-  getUniqueID : () ~%e~> (Int);
+  updateSubscriptions : forall a . (([Sub(a)],[Sub(a)])) ~%e~> ();
+  getUniqueID : forall a . (VirtualHandler(a)) ~%e~> (String);
 }
 
 ### SUBSCRIPTIONS ### 
 
-fun uniqueID() {
-  VDom.getUniqueID()
+
+fun uniqueID(handler) {
+  VDom.getUniqueID(handler)
 }
 
 fun getKeyCode(f) {
-  HandlerSub(uniqueID(), StringHandler("keypress", f))
+  var hdler = StringHandler("keypress", f);
+  HandlerSub(uniqueID(hdler), hdler)
 }
 
 fun getEvery(interval, f) {
-  HandlerSub(uniqueID(), TimeHandler(interval, f))
+  var hdler = TimeHandler(interval, f);
+  HandlerSub(uniqueID(hdler), hdler)
 }
 
 ######
@@ -56,20 +61,55 @@ fun attr(k, v) {
   (k, v)
 }
 
+fun inList(item, items) {
+  switch(item) {
+    case HandlerSub(searchId, searchHandler) ->
+      switch(items) {
+        case [] ->
+          false
+        case (HandlerSub(id,handler)::xs) ->
+          if (id == searchId) {
+            true
+          } else {
+            inList(item,xs)
+          }
+      }
+    case other ->
+      false
+  }
+}
+
+sig newSubs: ([Sub(a)],[Sub(a)]) ~%e~> [Sub(a)]
+fun newSubs(prevSubscriptions, newSubscriptions) {
+  for (x <- newSubscriptions) where (not(inList(x,prevSubscriptions)))
+    [x]
+}
+
+sig oldSubs: ([Sub(a)],[Sub(a)]) ~%e~> [Sub(a)]
+fun oldSubs(prevSubscriptions, newSubscriptions) {
+  for (x <- prevSubscriptions) where (not(inList(x,newSubscriptions)))
+    [x]
+}
+
+sig diffSubscriptions : ([Sub(a)],[Sub(a)]) ~%e~> ([Sub(a)],[Sub(a)])
+fun diffSubscriptions(prevSubscriptions, newSubscriptions) {
+  (newSubs(prevSubscriptions, newSubscriptions), oldSubs(prevSubscriptions, newSubscriptions))
+}
+
 # Main event loop
 fun evtLoop(updt, render, model, prevSubscriptions, subscriptionsFn) {
   receive {
     case msg ->
       var newModel = updt(msg, model);
       # Get new subscriptions
-      # var newSubscriptions = subscriptionsFn(newModel);
-      # var subscriptionsDiff = diffSubscriptions(prevSubscriptions, newSubscriptions);
+      var newSubscriptions = subscriptionsFn(newModel);
+      var subscriptionsDiff = diffSubscriptions(prevSubscriptions, newSubscriptions);
       # Update subscriptions on the DOM (FFI call)
-      # VDom.updateSubscriptions(subscriptionsDiff);
+      VDom.updateSubscriptions(subscriptionsDiff);
       # Update DOM
       VDom.updateDom(render(newModel));
       # Loop with new subscriptions
-      evtLoop(updt, render, newModel, prevSubscriptions, subscriptionsFn)
+      evtLoop(updt, render, newModel, newSubscriptions, subscriptionsFn)
   }
 }
 
