@@ -24,10 +24,14 @@ fun secondsHandler() {
   })
 }
 
-fun shortcutHandler(shortcutKey, msg) {
+fun shortcutHandler() {
   getKeyCode(fun(keycode) {
-    if (keycode == shortcutKey) {
-      msg
+    if (keycode == "80") {
+      TogglePause
+    } else if (keycode == "82") {
+      Reset
+    } else if (keycode == "83") {
+      Stop
     } else {
       NoOp
     }
@@ -90,7 +94,11 @@ fun view(model) {
 
 #sig subscriptions : Model -> [Sub(Msg)] 
 fun subscriptions(model) {
-  [secondsHandler(), shortcutHandler("80",TogglePause), shortcutHandler("82",Reset), shortcutHandler("83",Stop)]
+  if (model.paused == true) {
+    [secondsHandler()]
+  } else {
+    [secondsHandler(),shortcutHandler()]
+  }
 }
 
 
