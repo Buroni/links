@@ -50,14 +50,10 @@ sig updt : (Msg, Model) ~%e~> Model
 fun updt(msg, model) { 
   switch(msg) {
     case Tick ->
-      if (model.seconds < 59 && model.paused == false) {
+      if (model.seconds < 59) {
         (model with seconds = model.seconds + 1)
       } else {
-        if (model.paused == false) {
-          (model with minutes = model.minutes + 1, seconds = 0)
-        } else {
-          model
-        }
+        (model with minutes = model.minutes + 1, seconds = 0)
       }
     case Reset ->
       (model with minutes = 0, seconds = 0)   
@@ -95,7 +91,7 @@ fun view(model) {
 #sig subscriptions : Model -> [Sub(Msg)] 
 fun subscriptions(model) {
   if (model.paused == true) {
-    [secondsHandler()]
+    [shortcutHandler()]
   } else {
     [secondsHandler(),shortcutHandler()]
   }
