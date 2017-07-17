@@ -1,2 +1,2 @@
 #!/usr/bin/env bash
-sudo ../links --config=../config -m -d --path=.:../ time.links
+sudo ../links --config=../config -m -d --path=.:../ mousetest.links

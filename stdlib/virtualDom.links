@@ -4,7 +4,7 @@
 
 # typename VirtualHandler(a) = [| StringHandler: ((String) -> a) | Pines: a |];
 typename VirtualHandler(a) =
-  [| StringHandler: (String, (String) {}~> a) | UnitHandler: (String, () {}~> a) | TupleIntHandler: (String, (Int,Int) {}~> a) | TimeHandler: (Int, () {}~> a) |];
+  [| StringHandler: (String, (String) {}~> a) | UnitHandler: (String, () {}~> a) | TupleIntHandler: (String, ((Int,Int)) {}~> a) | TimeHandler: (Int, () {}~> a) |];
 
 typename Doc(a) =
   [| DocTextNode: (String)
@@ -27,6 +27,7 @@ alien javascript module "vdom.js" VDom {
   updateDom : forall a . (Doc(a)) ~%e~> ();
   updateSubscriptions : forall a . (([Sub(a)],[Sub(a)])) ~%e~> ();
   getUniqueID : forall a . (VirtualHandler(a)) ~%e~> (String);
+  # diffSubs : forall a . (VirtualHandler(a)) ~%e~> (String);
 }
 
 ### SUBSCRIPTIONS ### 
@@ -38,6 +39,11 @@ fun uniqueID(handler) {
 
 fun getKeyCode(f) {
   var hdler = StringHandler("keypress", f);
+  HandlerSub(uniqueID(hdler), hdler)
+}
+
+fun getMousePos(f) {
+  var hdler = TupleIntHandler("mousemove", f);
   HandlerSub(uniqueID(hdler), hdler)
 }
 
@@ -61,41 +67,6 @@ fun attr(k, v) {
   (k, v)
 }
 
-fun inList(item, items) {
-  switch(item) {
-    case HandlerSub(searchId, searchHandler) ->
-      switch(items) {
-        case [] ->
-          false
-        case (HandlerSub(id,handler)::xs) ->
-          if (id == searchId) {
-            true
-          } else {
-            inList(item,xs)
-          }
-      }
-    case other ->
-      false
-  }
-}
-
-sig newSubs: ([Sub(a)],[Sub(a)]) ~%e~> [Sub(a)]
-fun newSubs(prevSubscriptions, newSubscriptions) {
-  for (x <- newSubscriptions) where (not(inList(x,prevSubscriptions)))
-    [x]
-}
-
-sig oldSubs: ([Sub(a)],[Sub(a)]) ~%e~> [Sub(a)]
-fun oldSubs(prevSubscriptions, newSubscriptions) {
-  for (x <- prevSubscriptions) where (not(inList(x,newSubscriptions)))
-    [x]
-}
-
-sig diffSubscriptions : ([Sub(a)],[Sub(a)]) ~%e~> ([Sub(a)],[Sub(a)])
-fun diffSubscriptions(prevSubscriptions, newSubscriptions) {
-  (newSubs(prevSubscriptions, newSubscriptions), oldSubs(prevSubscriptions, newSubscriptions))
-}
-
 # Main event loop
 fun evtLoop(updt, render, model, prevSubscriptions, subscriptionsFn) {
   receive {
@@ -103,9 +74,8 @@ fun evtLoop(updt, render, model, prevSubscriptions, subscriptionsFn) {
       var newModel = updt(msg, model);
       # Get new subscriptions
       var newSubscriptions = subscriptionsFn(newModel);
-      var subscriptionsDiff = diffSubscriptions(prevSubscriptions, newSubscriptions);
       # Update subscriptions on the DOM (FFI call)
-      VDom.updateSubscriptions(subscriptionsDiff);
+      VDom.updateSubscriptions((prevSubscriptions, newSubscriptions));
       # Update DOM
       VDom.updateDom(render(newModel));
       # Loop with new subscriptions
