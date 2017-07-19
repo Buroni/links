@@ -1,0 +1,149 @@
+open Tags
+open Attrs
+open Events
+open VirtualDom
+
+typename Ball = (x : Float, y: Float, vx : Float, vy : Float);
+typename Player = (x : Float, y: Float, vx : Float, vy : Float, score : Int);
+# typename Input = (space : Bool, paddle1 : Int, paddle2 : Int);
+typename Msg = [| NewFrame | Paddle1 : Int | Paddle2 : Int | TogglePause | NoOp |];
+typename Game = (paused : Bool, ball : Ball, player1 : Player, player2 : Player);
+
+
+var width = 600.0;
+var height = 400.0;
+var halfWidth = 300.0;
+var halfHeight = 200.0;
+
+# sig player : Float -> Player
+fun player(xPos) {
+  (x=xPos,y=halfHeight-.22.0,vx=0.0,vy=0.0,score=0)
+}
+
+var defaultGame = (paused=true, ball=(x=halfWidth,y=halfHeight,vx=200.0,vy=200.0), player1=player(20.0), player2=player(width-.37.0));
+
+fun animFrameHandler() {
+  animationFrame(fun() { NewFrame })
+}
+
+fun keyDownHandler() {
+  getKeyDownCode(fun(keycode) {
+    if (keycode == "38") {
+      Paddle1(1)
+    } else if (keycode == "40") {
+      Paddle1(0)
+    } else if (keycode == "87") {
+      Paddle2(1)
+    } else if (keycode == "83") {
+      Paddle2(0)
+    } else if (keycode == "32") {
+      TogglePause
+    } else {
+      NoOp
+    }
+  })
+}
+
+sig drawCircle : (Float,Float) -> Doc(Msg)
+fun drawCircle(x,y) {
+  div ([class ("circle"), style ("left:"^^floatToString(x)^^"px;top:"^^floatToString(y)^^"px;position:absolute;")], [], [])
+}
+
+sig drawPaddle : (Float,Float) -> Doc(Msg)
+fun drawPaddle(x,y) {
+  div ([class ("paddle"), style ("left:"^^floatToString(x)^^"px;top:"^^floatToString(y)^^"px;position:absolute;")], [], [])
+}
+
+# sig moveBall : Ball -> Ball
+fun moveBall(ball) {
+  (ball with x = ball.x +. 0.5)
+}
+
+fun movePaddle(player, direction) {
+  if (direction == 1) {
+    (player with y = player.y -. 0.5)
+  } else {
+    (player with y = player.y +. 0.5)
+  }
+}
+
+sig updt : (Msg, Game) ~%e~> Game
+fun updt(msg, game) { 
+  var score1 = 
+    if (game.ball.x > width) { # 55.0
+      1
+    } else {
+      0
+    };
+
+  var score2 = 
+    if (game.ball.x < 0.0) {
+      1
+    } else {
+      0
+    };
+
+  var newState =
+    if (score1 <> score2) {
+      true
+    } else {
+      game.paused
+    };
+
+  var newBall =
+    if (game.paused == true) {
+      (x=halfWidth,y=halfHeight,vx=200.0,vy=200.0)
+    } else {
+      moveBall(game.ball)
+    };
+
+    switch(msg) {
+      case NewFrame ->
+        (game with ball = newBall, paused = newState)
+      case TogglePause ->
+        (game with paused = not(game.paused))
+      case Paddle1(i) ->
+        (game with player1 = movePaddle(game.player1, i), ball = newBall, paused = newState)
+      case Paddle2(i) ->
+        (game with player2 = movePaddle(game.player2, i), ball = newBall, paused = newState)
+      case NoOp ->
+        game   
+    }
+}
+
+sig view : (Game) ~%e~> Doc(Msg)
+fun view(game) {
+  div ([class ("canvas")], [], [
+    drawCircle(game.ball.x,game.ball.y), 
+    drawPaddle(game.player2.x,game.player2.y),
+    drawPaddle(game.player1.x,game.player1.y)
+  ])
+}
+
+#sig subscriptions : Game -> [Sub(Msg)] 
+fun subscriptions(model) {
+  [animFrameHandler(), keyDownHandler()]
+}
+
+
+fun mainPage(_, _) {
+  var evtHandler = runVDom("placeholder", view, updt, defaultGame, subscriptions);
+  page
+  <html>
+    <head>
+      <title>Pong</title>
+      <link rel="stylesheet" href="css/pong.css" type="text/css" />
+    </head>
+    <body>
+      <div id="placeholder"></div>
+    </body>
+  </html>
+}
+
+fun main() {
+  addRoute("/", mainPage);
+  addStaticRoute("/css", "css", [("css", "text/css")]);
+  servePages()
+}
+
+main()

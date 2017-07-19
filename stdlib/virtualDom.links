@@ -4,7 +4,7 @@
 
 # typename VirtualHandler(a) = [| StringHandler: ((String) -> a) | Pines: a |];
 typename VirtualHandler(a) =
-  [| StringHandler: (String, (String) {}~> a) | UnitHandler: (String, () {}~> a) | TupleIntHandler: (String, ((Int,Int)) {}~> a) | TimeHandler: (Int, () {}~> a) |];
+  [| StringHandler: (String, (String) {}~> a) | UnitHandler: (String, () {}~> a) | TupleIntHandler: (String, ((Int,Int)) {}~> a) | TimeHandler: (Int, () {}~> a) | AnimationFrameHandler: ((a) {}~> a) |];
 
 typename Doc(a) =
   [| DocTextNode: (String)
@@ -37,8 +37,13 @@ fun uniqueID(handler) {
   VDom.getUniqueID(handler)
 }
 
-fun getKeyCode(f) {
-  var hdler = StringHandler("keypress", f);
+fun getKeyDownCode(f) {
+  var hdler = StringHandler("keydown", f);
+  HandlerSub(uniqueID(hdler), hdler)
+}
+
+fun getKeyUpCode(f) {
+  var hdler = StringHandler("keyup", f);
   HandlerSub(uniqueID(hdler), hdler)
 }
 
@@ -49,6 +54,11 @@ fun getMousePos(f) {
 
 fun getEvery(interval, f) {
   var hdler = TimeHandler(interval, f);
+  HandlerSub(uniqueID(hdler), hdler)
+}
+
+fun animationFrame(f) {
+  var hdler = UnitHandler("animationFrame", f);
   HandlerSub(uniqueID(hdler), hdler)
 }
 

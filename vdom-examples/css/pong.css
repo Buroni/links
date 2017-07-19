@@ -1,0 +1,24 @@
+.circle {
+	width: 15px;
+	height: 15px;
+	border-radius: 50%;
+	background-color: white;
+}
+
+.paddle {
+	width: 12px;
+	height: 45px;
+	background-color: white;
+}
+
+.canvas {
+	width: 600px;
+	height: 400px;
+	background-color: rgb(60,100,60);
+	color: rgb(160,200,160);
+}
+
+body {
+	margin: 0;
+	padding: 0;
+}
