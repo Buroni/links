@@ -69,7 +69,6 @@ fun drawPaddle(x,y) {
   div ([class ("paddle"), style ("left:"^^floatToString(x)^^"px;top:"^^floatToString(y)^^"px;position:absolute;")], [], [])
 }
 
-# sig physicsUpdate : Ball -> Ball
 fun physicsUpdate(ball) {
   (ball with x = ball.x +. (ball.vx *. 0.0167), y = ball.y +. (ball.vy *. 0.0167))
 }
@@ -117,18 +116,11 @@ fun movePaddle(player, direction, scoreUpdate) {
 sig updt : (Msg, Game) ~%e~> Game
 fun updt(msg, game) { 
   var score1 = 
-    if (game.ball.x > width) { # 55.0
-      1
-    } else {
-      0
-    };
+    if (game.ball.x > width) { 1 } else { 0 };
 
   var score2 = 
-    if (game.ball.x < 0.0) {
-      1
-    } else {
-      0
-    };
+    if (game.ball.x < 0.0) { 1 } 
+    else { 0 };
 
   var newState =
     if (score1 <> score2) {
