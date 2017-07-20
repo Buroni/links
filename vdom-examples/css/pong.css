@@ -1,3 +1,9 @@
+body {
+	margin: 0;
+	padding: 0;
+	font-family: "Lucida Console", Monaco, monospace;
+}
+
 .circle {
 	width: 15px;
 	height: 15px;
@@ -12,13 +18,26 @@
 }
 
 .canvas {
+	margin: 0;
+	padding: 0;;
 	width: 600px;
 	height: 400px;
 	background-color: rgb(60,100,60);
 	color: rgb(160,200,160);
 }
 
-body {
+.scores {
 	margin: 0;
 	padding: 0;
+	text-align: center;
+	letter-spacing: 10px;
+	font-size: 50px;
 }
+
+.instructions {
+	margin-top: 320px;
+	padding: 0;
+	font-size: 11px;
+	text-align: center;
+}
+
